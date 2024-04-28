@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>(♡´◡`♡)</title>
+</head>
+
+<body>
+
+    <canvas id='c'></canvas>
+
+    <div style="position: relative;">
+        <div class="card" id="card" onclick="handleCardClick()">
+            <div class="imgBox">
+                <div class="bark"></div>
+                <!-- <img src="https://image.ibb.co/fYzTrb/lastofus.jpg"> -->
+                <img src="https://i.ibb.co/wZtGBx1/panda.jpg">
+            </div>
+            <div class="details">
+                <h4 class=" color1">Happy</h2>
+                    <h4 class="color2 margin">Bathday!</h3>
+                        <p class="custom-font">Test,</p>
+                        <p class="custom-font">Let's see.. .</p>
+                        <p class="custom-font">You’re never around, you</p>
+                        <p class="custom-font">hate the music I’m into, you</p>
+                        <p class="custom-font">practically despise the movies I</p>
+                        <p class="custom-font">like, and yet somehow you still</p>
+                        <p class="custom-font">manage to be the best dad every year.</p>
+                        <p class="custom-font">How do you do that? :)</p>
+                        <p class="custom-font text-right">Happy Birthday, papa!</p>
+                        <p class="custom-font text-right">♥Sarah</p>
+            </div>
+        </div>
+    </div>
+
+</body>
+
+</html>
+
+<!-- 煙火 -->
+<script>
+    function startFirework() {
+        var w = c.width = window.innerWidth,
+            h = c.height = window.innerHeight,
+            ctx = c.getContext('2d'),
+
+            hw = w / 2.3,
+            hh = h / 2.9,
+
+            opts = {
+                // strings: ['萍萍小朋友！', '祝泥生日快樂！', '(♡´◡`♡)'],
+                strings: ['測試測試測！', '測試測試測試！', '(♡´◡`♡)'],
+                charSize: 25,
+                charSpacing: 35,
+                lineHeight: 50,
+
+                cx: w / 2,
+                cy: h / 2,
+
+                // 火箭前幾個點的數量
+                fireworkPrevPoints: 10,
+                // 火箭的基本線寬
+                fireworkBaseLineWidth: 5,
+                // 火箭額外的線寬
+                fireworkAddedLineWidth: 8,
+                // 火箭生成的時間
+                fireworkSpawnTime: 200,
+                // 火箭基本到達時間
+                fireworkBaseReachTime: 30,
+                // 火箭額外的到達時間
+                fireworkAddedReachTime: 30,
+                // 煙火圓的基本大小
+                fireworkCircleBaseSize: 25,
+                // 煙火圓的額外大小
+                fireworkCircleAddedSize: 10,
+                // 煙火圓的基本時間
+                fireworkCircleBaseTime: 30,
+                // 煙火圓的額外時間
+                fireworkCircleAddedTime: 30,
+                // 煙火圓淡化的基本時間
+                fireworkCircleFadeBaseTime: 10,
+                // 煙火圓額外的淡化時間
+                fireworkCircleFadeAddedTime: 5,
+                // 煙火的基本碎片數量
+                fireworkBaseShards: 20,
+                // 煙火的額外碎片數量
+                fireworkAddedShards: 5,
+                // 煙火碎片前幾個點的數量
+                fireworkShardPrevPoints: 3,
+                // 煙火碎片的基本速度
+                fireworkShardBaseVel: 4,
+                // 煙火碎片的額外速度
+                fireworkShardAddedVel: 2,
+                // 煙火碎片的基本大小
+                fireworkShardBaseSize: 3,
+                // 煙火碎片的額外大小
+                fireworkShardAddedSize: 3,
+                // 重力
+                gravity: .1,
+                // 上升流量
+                upFlow: -.1,
+                // 文字思考等待時間
+                letterContemplatingWaitTime: 360,
+                // 氣球生成時間
+                balloonSpawnTime: 20,
+                // 氣球基本膨脹時間
+                balloonBaseInflateTime: 10,
+                // 氣球額外膨脹時間
+                balloonAddedInflateTime: 10,
+                // 氣球基本大小
+                balloonBaseSize: 30,
+                // 氣球額外大小
+                balloonAddedSize: 35,
+                // 氣球基本速度
+                balloonBaseVel: .4,
+                // 氣球額外速度
+                balloonAddedVel: .4,
+                // 氣球基本弧度
+                balloonBaseRadian: -(Math.PI / 2 - .5),
+                // 氣球額外弧度
+                balloonAddedRadian: -1,
+            },
+            calc = {
+                totalWidth: opts.charSpacing * Math.max(opts.strings[0].length, opts.strings[1].length)
+            },
+
+            Tau = Math.PI * 2,
+            TauQuarter = Tau / 4,
+
+            letters = [];
+
+        ctx.font = opts.charSize + 'px Helvetica';
+
+        function Letter(char, x, y) {
+            this.char = char;
+            this.x = x;
+            this.y = y;
+
+            this.dx = -ctx.measureText(char).width / 1;
+            this.dy = +opts.charSize / 1;
+
+            this.fireworkDy = this.y - hh;
+
+            var hue = x / calc.totalWidth * 360;
+
+            this.color = 'hsl(hue,80%,50%)'.replace('hue', hue);
+            this.lightAlphaColor = 'hsla(hue,80%,light%,alp)'.replace('hue', hue);
+            this.lightColor = 'hsl(hue,80%,35%,80%)'.replace('hue', hue);
+            this.alphaColor = 'hsla(hue,80%,50%,alp)'.replace('hue', hue);
+
+            this.reset();
+        }
+        Letter.prototype.reset = function () {
+
+            this.phase = 'firework';
+            this.tick = 0;
+            this.spawned = false;
+            this.spawningTime = opts.fireworkSpawnTime * Math.random() | 0;
+            this.reachTime = opts.fireworkBaseReachTime + opts.fireworkAddedReachTime * Math.random() | 0;
+            this.lineWidth = opts.fireworkBaseLineWidth + opts.fireworkAddedLineWidth * Math.random();
+            this.prevPoints = [[0, hh, 0]];
+        }
+        Letter.prototype.step = function () {
+
+            if (this.phase === 'firework') {
+
+                if (!this.spawned) {
+
+                    ++this.tick;
+                    if (this.tick >= this.spawningTime) {
+
+                        this.tick = 0;
+                        this.spawned = true;
+                    }
+
+                } else {
+
+                    ++this.tick;
+
+                    var linearProportion = this.tick / this.reachTime,
+                        armonicProportion = Math.sin(linearProportion * TauQuarter),
+
+                        x = linearProportion * this.x,
+                        y = hh + armonicProportion * this.fireworkDy;
+
+                    if (this.prevPoints.length > opts.fireworkPrevPoints)
+                        this.prevPoints.shift();
+
+                    this.prevPoints.push([x, y, linearProportion * this.lineWidth]);
+
+                    var lineWidthProportion = 1 / (this.prevPoints.length - 1);
+
+                    for (var i = 1; i < this.prevPoints.length; ++i) {
+
+                        var point = this.prevPoints[i],
+                            point2 = this.prevPoints[i - 1];
+
+                        ctx.strokeStyle = this.alphaColor.replace('alp', i / this.prevPoints.length);
+                        ctx.lineWidth = point[2] * lineWidthProportion * i;
+                        ctx.beginPath();
+                        ctx.moveTo(point[0], point[1]);
+                        ctx.lineTo(point2[0], point2[1]);
+                        ctx.stroke();
+
+                    }
+
+                    if (this.tick >= this.reachTime) {
+
+                        this.phase = 'contemplate';
+
+                        this.circleFinalSize = opts.fireworkCircleBaseSize + opts.fireworkCircleAddedSize * Math.random();
+                        this.circleCompleteTime = opts.fireworkCircleBaseTime + opts.fireworkCircleAddedTime * Math.random() | 0;
+                        this.circleCreating = true;
+                        this.circleFading = false;
+
+                        this.circleFadeTime = opts.fireworkCircleFadeBaseTime + opts.fireworkCircleFadeAddedTime * Math.random() | 0;
+                        this.tick = 0;
+                        this.tick2 = 0;
+
+                        this.shards = [];
+
+                        var shardCount = opts.fireworkBaseShards + opts.fireworkAddedShards * Math.random() | 0,
+                            angle = Tau / shardCount,
+                            cos = Math.cos(angle),
+                            sin = Math.sin(angle),
+
+                            x = 1,
+                            y = 0;
+
+                        for (var i = 0; i < shardCount; ++i) {
+                            var x1 = x;
+                            x = x * cos - y * sin;
+                            y = y * cos + x1 * sin;
+
+                            this.shards.push(new Shard(this.x, this.y, x, y, this.alphaColor));
+                        }
+                    }
+
+                }
+            } else if (this.phase === 'contemplate') {
+
+                ++this.tick;
+
+                if (this.circleCreating) {
+
+                    ++this.tick2;
+                    var proportion = this.tick2 / this.circleCompleteTime,
+                        armonic = -Math.cos(proportion * Math.PI) / 2 + .5;
+
+                    ctx.beginPath();
+                    ctx.fillStyle = this.lightAlphaColor.replace('light', 50 + 50 * proportion).replace('alp', proportion);
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, armonic * this.circleFinalSize, 0, Tau);
+                    ctx.fill();
+
+                    if (this.tick2 > this.circleCompleteTime) {
+                        this.tick2 = 0;
+                        this.circleCreating = false;
+                        this.circleFading = true;
+                    }
+                } else if (this.circleFading) {
+
+                    ctx.fillStyle = this.lightColor.replace('light', 70);
+                    ctx.fillText(this.char, this.x + this.dx, this.y + this.dy);
+
+                    ++this.tick2;
+                    var proportion = this.tick2 / this.circleFadeTime,
+                        armonic = -Math.cos(proportion * Math.PI) / 2 + .5;
+
+                    ctx.beginPath();
+                    ctx.fillStyle = this.lightAlphaColor.replace('light', 100).replace('alp', 1 - armonic);
+                    ctx.arc(this.x, this.y, this.circleFinalSize, 0, Tau);
+                    ctx.fill();
+
+                    if (this.tick2 >= this.circleFadeTime)
+                        this.circleFading = false;
+
+                } else {
+
+                    ctx.fillStyle = this.lightColor.replace('light', 70);
+                    ctx.fillText(this.char, this.x + this.dx, this.y + this.dy);
+                }
+
+                for (var i = 0; i < this.shards.length; ++i) {
+
+                    this.shards[i].step();
+
+                    if (!this.shards[i].alive) {
+                        this.shards.splice(i, 1);
+                        --i;
+                    }
+                }
+
+                if (this.tick > opts.letterContemplatingWaitTime) {
+
+                    this.phase = 'balloon';
+
+                    this.tick = 0;
+                    this.spawning = true;
+                    this.spawnTime = opts.balloonSpawnTime * Math.random() | 0;
+                    this.inflating = false;
+                    this.inflateTime = opts.balloonBaseInflateTime + opts.balloonAddedInflateTime * Math.random() | 0;
+                    this.size = opts.balloonBaseSize + opts.balloonAddedSize * Math.random() | 0;
+
+                    var rad = opts.balloonBaseRadian + opts.balloonAddedRadian * Math.random(),
+                        vel = opts.balloonBaseVel + opts.balloonAddedVel * Math.random();
+
+                    this.vx = Math.cos(rad) * vel;
+                    this.vy = Math.sin(rad) * vel;
+                }
+            } else if (this.phase === 'balloon') {
+
+                ctx.strokeStyle = this.lightColor.replace('light', 80);
+
+                if (this.spawning) {
+
+                    ++this.tick;
+                    ctx.fillStyle = this.lightColor.replace('light', 70);
+                    ctx.fillText(this.char, this.x + this.dx, this.y + this.dy);
+
+                    if (this.tick >= this.spawnTime) {
+                        this.tick = 0;
+                        this.spawning = false;
+                        this.inflating = true;
+                    }
+                } else if (this.inflating) {
+
+                    ++this.tick;
+
+                    var proportion = this.tick / this.inflateTime,
+                        x = this.cx = this.x,
+                        y = this.cy = this.y - this.size * proportion;
+
+                    ctx.fillStyle = this.alphaColor.replace('alp', proportion);
+                    ctx.beginPath();
+                    generateBalloonPath(x, y, this.size * proportion);
+                    ctx.fill();
+
+                    ctx.beginPath();
+                    ctx.moveTo(x, y);
+                    ctx.lineTo(x, this.y);
+                    ctx.stroke();
+
+                    ctx.fillStyle = this.lightColor.replace('light', 70);
+                    ctx.fillText(this.char, this.x + this.dx, this.y + this.dy);
+
+                    if (this.tick >= this.inflateTime) {
+                        this.tick = 0;
+                        this.inflating = false;
+                    }
+
+                } else {
+
+                    this.cx += this.vx;
+                    this.cy += this.vy += opts.upFlow;
+
+                    ctx.fillStyle = this.color;
+                    ctx.beginPath();
+                    generateBalloonPath(this.cx, this.cy, this.size);
+                    ctx.fill();
+
+                    ctx.beginPath();
+                    ctx.moveTo(this.cx, this.cy);
+                    ctx.lineTo(this.cx, this.cy + this.size);
+                    ctx.stroke();
+
+                    ctx.fillStyle = this.lightColor.replace('light', 70);
+                    ctx.fillText(this.char, this.cx + this.dx, this.cy + this.dy + this.size);
+
+                    if (this.cy + this.size < -hh || this.cx < -hw || this.cy > hw)
+                        this.phase = 'done';
+
+                }
+            }
+        }
+        function Shard(x, y, vx, vy, color) {
+
+            var vel = opts.fireworkShardBaseVel + opts.fireworkShardAddedVel * Math.random();
+
+            this.vx = vx * vel;
+            this.vy = vy * vel;
+
+            this.x = x;
+            this.y = y;
+
+            this.prevPoints = [[x, y]];
+            this.color = color;
+
+            this.alive = true;
+
+            this.size = opts.fireworkShardBaseSize + opts.fireworkShardAddedSize * Math.random();
+        }
+        Shard.prototype.step = function () {
+
+            this.x += this.vx;
+            this.y += this.vy += opts.gravity;
+
+            if (this.prevPoints.length > opts.fireworkShardPrevPoints)
+                this.prevPoints.shift();
+
+            this.prevPoints.push([this.x, this.y]);
+
+            var lineWidthProportion = this.size / this.prevPoints.length;
+
+            for (var k = 0; k < this.prevPoints.length - 1; ++k) {
+
+                var point = this.prevPoints[k],
+                    point2 = this.prevPoints[k + 1];
+
+                ctx.strokeStyle = this.color.replace('alp', k / this.prevPoints.length);
+                ctx.lineWidth = k * lineWidthProportion;
+                ctx.beginPath();
+                ctx.moveTo(point[0], point[1]);
+                ctx.lineTo(point2[0], point2[1]);
+                ctx.stroke();
+
+            }
+
+            if (this.prevPoints[0][1] > hh)
+                this.alive = false;
+        }
+        function generateBalloonPath(x, y, size) {
+
+            ctx.moveTo(x, y);
+            ctx.bezierCurveTo(x - size / 2, y - size / 2,
+                x - size / 4, y - size,
+                x, y - size);
+            ctx.bezierCurveTo(x + size / 4, y - size,
+                x + size / 2, y - size / 2,
+                x, y);
+        }
+
+        function anim() {
+
+            window.requestAnimationFrame(anim);
+
+            ctx.fillStyle = '#fde3a7';
+
+            ctx.fillRect(0, 0, w, h);
+
+            ctx.translate(hw, hh);
+
+            var done = true;
+            for (var l = 0; l < letters.length; ++l) {
+
+                letters[l].step();
+                if (letters[l].phase !== 'done')
+                    done = false;
+            }
+
+            ctx.translate(-hw, -hh);
+
+            if (done)
+                for (var l = 0; l < letters.length; ++l)
+                    letters[l].reset();
+        }
+
+        for (var i = 0; i < opts.strings.length; ++i) {
+            for (var j = 0; j < opts.strings[i].length; ++j) {
+                letters.push(new Letter(opts.strings[i][j],
+                    j * opts.charSpacing + opts.charSpacing / 2 - opts.strings[i].length * opts.charSize / 2,
+                    i * opts.lineHeight + opts.lineHeight / 2 - opts.strings.length * opts.lineHeight / 2));
+            }
+        }
+
+        anim();
+
+        window.addEventListener('resize', function () {
+
+            w = c.width = window.innerWidth;
+            h = c.height = window.innerHeight;
+
+            hw = w / 2;
+            hh = h / 2;
+
+            ctx.font = opts.charSize + 'px Verdana';
+        });
+    }
+</script>
+<!-- 煙火 -->
+<style>
+    canvas {
+        position: absolute;
+        top: -10%;
+        left: 0;
+        margin-bottom: 20px;
+    }
+
+    #pFirework {
+        margin: 0 0;
+        position: absolute;
+        font: 16px Verdana;
+        color: #eee;
+        height: 25px;
+        top: calc(100vh - 30px);
+        text-shadow: 0 0 2px white;
+    }
+
+    #pFirework a {
+        text-decoration: none;
+        color: #aaa;
+    }
+
+    #pFirework span {
+        font-size: 11px;
+    }
+
+    #pFirework>a:first-of-type {
+        font-size: 20px;
+    }
+
+    body {
+        overflow: hidden;
+    }
+</style>
+<!-- 卡片 -->
+<script>
+    var isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+    if (isMobile) {
+        card.classList.remove('pc');
+        card.classList.add('mobile');
+    } else {
+        card.classList.remove('mobile');
+        card.classList.add('pc');
+    }
+
+    var isFireworkStarted = false;
+
+    function handleCardClick() {
+        if (!isFireworkStarted) {
+            startFirework();
+            isFireworkStarted = true;
+        }
+
+        var card = document.getElementById('card');
+
+        if (isMobile) {
+            if (!card.classList.contains('active')) {
+                card.classList.remove('inactive');
+                card.classList.add('active');
+            } else {
+                card.classList.remove('active');
+                card.classList.add('inactive');
+            }
+        }
+    }
+</script>
+<!-- 卡片 -->
+<style>
+    @import url('https://fonts.googleapis.com/css?family=Indie+Flower');
+    @import url('https://fonts.googleapis.com/css?family=Amatic+SC');
+
+    body {
+        font-family: 'Helvetica", "Arial", "LiHei Pro", "黑體-繁", "微軟正黑體", sans-serif', cursive !important;
+        background: #111111;
+        margin: 0px;
+        padding: 0px;
+    }
+
+    ::selection {
+        background: transparent;
+    }
+
+    .card h4 {
+        margin-top: -1px;
+        font-family: 'Amatic SC', cursive !important;
+    }
+
+    .card.pc h4 {
+        font-size: 26px;
+        line-height: 1px;
+    }
+
+    .card.mobile h4 {
+        font-size: 17.33px;
+        line-height: 0.67px;
+    }
+
+    .custom-font {
+        font-family: "Helvetica", "Arial", "LiHei Pro", "黑體-繁", "微軟正黑體", sans-serif;
+    }
+
+    .custom-font.text-right {
+        text-align: right;
+    }
+
+    .color1 {
+        color: #1BBC9B
+    }
+
+    .color2 {
+        color: #C0392B
+    }
+
+    .card {
+        color: #013243;
+        position: absolute;
+        top: 55%;
+        left: 50%;
+        background: #e0e1dc;
+        transform-style: preserve-3d;
+        box-shadow: inset 300px 0 50px rgba(0, 0, 0, .5), 20px 0 60px rgba(0, 0, 0, .5);
+        transition: 1s;
+        user-select: none;
+    }
+
+    .card.pc {
+        width: 300px;
+        height: 400px;
+        transform: translate(-50%, 80%) perspective(2000px);
+    }
+
+    .card.mobile {
+        width: 200px;
+        height: 266.67px;
+        transform: translate(-50%, 135%) perspective(2000px);
+    }
+
+    /* 移動端卡片旋轉 */
+    .card.active {
+        transform: translate(-10%, 135%) perspective(2000px) rotate(10deg) scale(1.1);
+        box-shadow: inset 20px 0 50px rgba(0, 0, 0, .5), 0 10px 100px rgba(0, 0, 0, .5);
+    }
+
+    /* 移動端卡片恢復 */
+    .card.inactive {
+        transform: translate(-50%, 135%) perspective(2000px) rotate(0deg) scale(1.1);
+        box-shadow: inset -20px 0 50px rgba(0, 0, 0, .5), 0 -10px 100px rgba(0, 0, 0, .5);
+    }
+
+    /* 移動端卡片翻開 */
+    .card.active .imgBox {
+        transform: rotateY(-135deg);
+    }
+
+    /* 移動端卡片翻開後隱藏封面 */
+    .card.active .bark {
+        opacity: 1;
+        transition: .6s;
+        box-shadow: 300px 200px 100px rgba(0, 0, 0, .4) inset;
+    }
+
+    /* 上方陰影 */
+    .card:before {
+        content: '';
+        position: absolute;
+        left: 0;
+        width: 100%;
+        background: #BAC1BA;
+        transform-origin: bottom;
+        transform: skewX(-45deg);
+    }
+
+    .card.pc:before {
+        top: -5px;
+        height: 5px;
+    }
+
+    .card.mobile:before {
+        top: -3.33px;
+        height: 3.33px;
+    }
+
+    /* 右側陰影 */
+    .card:after {
+        content: '';
+        position: absolute;
+        top: 0;
+        height: 100%;
+        background: #92A29C;
+        transform-origin: left;
+        transform: skewY(-45deg);
+    }
+
+    .card.pc:after {
+        right: -5px;
+        width: 5px;
+    }
+
+    .card.mobile:after {
+        right: -3.33px;
+        width: 3.33px;
+    }
+
+    .card .imgBox {
+        width: 100%;
+        height: 100%;
+        position: relative;
+        transform-origin: left;
+        transition: .7s;
+    }
+
+    .card .bark {
+        position: absolute;
+        background: #e0e1dc;
+        width: 100%;
+        height: 100%;
+        opacity: 0;
+        transition: .7s;
+    }
+
+    .card.pc .imgBox img {
+        min-width: 250px;
+        max-height: 400px;
+    }
+
+    .card.mobile .imgBox img {
+        min-width: 166.67x;
+        max-height: 266.67px;
+    }
+
+    .card.pc:hover {
+        transform: translate(-50%, 80%) perspective(2000px) rotate(10deg) scale(1.1);
+        box-shadow: inset 20px 0 50px rgba(0, 0, 0, .5), 0 10px 100px rgba(0, 0, 0, .5);
+    }
+
+    .card.pc:hover .imgBox {
+        transform: rotateY(-135deg);
+    }
+
+    .card.pc:hover .bark {
+        opacity: 1;
+        transition: .6s;
+        box-shadow: 300px 200px 100px rgba(0, 0, 0, .4) inset;
+    }
+
+    .card .details {
+        position: absolute;
+        top: 0;
+        left: 0;
+        box-sizing: border-box;
+        z-index: -1;
+    }
+
+    .card.pc .details {
+        padding: 0 0 0 10px;
+        margin-top: 70px;
+    }
+
+    .card.mobile .details {
+        padding: 0 0 0 6.67px;
+        margin-top: 46.67px;
+    }
+
+    .card .details p {
+        transform: rotate(-0deg);
+    }
+
+    .card.pc .details p {
+        font-size: 15px;
+        line-height: 5px;
+        transform: rotate(-0deg);
+        padding: 0 0 0 20px;
+    }
+
+    .card.mobile .details p {
+        font-size: 10px;
+        line-height: 3.33px;
+        transform: rotate(-0deg);
+        padding: 0 0 0 10px;
+    }
+
+    .card .details h4 {
+        text-align: center;
+    }
+
+    .text-right {
+        text-align: right;
+    }
+</style>
